@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e1a">
+<title>MiniAnyDesk</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--a:#7c5cff;--b:#22d3c5;--k:#232b52;--k2:#2f3a70;--ink:#eaf0ff;--mut:#8d9ac0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0a0e1a;color:var(--ink);font:16px system-ui,sans-serif;overscroll-behavior:none}
+[hidden]{display:none!important}
+button,input{font:inherit}
+#login{max-width:340px;margin:10vh auto;padding:24px;display:grid;gap:12px;border:1px solid #27305a;border-radius:20px;background:#121830}
+#login h1{margin:0;font-size:24px;background:linear-gradient(90deg,#fff,#a99bff,#5eead9);-webkit-background-clip:text;background-clip:text;color:transparent}
+#login input{padding:14px;border-radius:12px;border:1px solid #27305a;background:#1a2142;color:var(--ink);font-size:20px;text-align:center;letter-spacing:4px}
+#go{padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--a),#5b3df0);color:#fff;font-weight:700}
+#err{color:#ff8a8a;min-height:1.2em;text-align:center;font-size:14px}
+#stage{position:fixed;inset:0;background:#000;overflow:hidden}
+#zw{position:absolute;inset:0;transform-origin:0 0}
+#v{width:100%;height:100%;object-fit:contain;background:#27508a}
+#cur{position:absolute;left:0;top:0;pointer-events:none;transform-origin:0 0;z-index:2;font-size:18px;line-height:1}
+#pad{position:absolute;inset:0;touch-action:none}
+#pill{position:absolute;top:calc(8px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));background:#11161dcc;font-size:12px;padding:4px 10px;border-radius:8px;z-index:3;pointer-events:none}
+#pill:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;margin-right:6px}
+#tbar{position:absolute;left:50%;bottom:0;transform:translateX(-50%);display:flex;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#2a3f5fe6;border-radius:18px 18px 0 0;z-index:5;backdrop-filter:blur(10px);max-width:100vw;overflow-x:auto}
+#tbar button{flex:none;height:40px;min-width:44px;border:0;border-radius:11px;background:#ffffff26;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-size:14px}
+#tbar button.on{background:linear-gradient(135deg,var(--a),var(--b))}
+svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#pip{position:absolute;right:12px;bottom:78px;width:96px;height:128px;object-fit:cover;border-radius:12px;border:2px solid var(--b);z-index:4;background:#000}
+#toast{position:absolute;left:50%;top:calc(44px + env(safe-area-inset-top));transform:translateX(-50%);background:#000c;padding:7px 14px;border-radius:10px;font-size:14px;opacity:0;transition:.2s;z-index:12;pointer-events:none;text-align:center;max-width:90vw}
+#toast.on{opacity:1}
+.menu{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;background:#121830;border:1px solid #27305a;border-radius:14px;padding:10px;z-index:6;max-width:94vw}
+.menu button,.panel button{border:0;background:var(--k2);color:#fff;padding:10px 14px;border-radius:10px}
+.panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,92vw);max-height:80vh;overflow:auto;background:#121830;border:1px solid #27305a;border-radius:16px;padding:14px;z-index:9;display:grid;gap:10px}
+.panel label{display:flex;gap:8px;align-items:center;font-size:15px}
+.panel .row{display:flex;justify-content:space-between;width:100%;text-align:left}
+.mut{color:var(--mut);font-size:14px}
+#tx{position:absolute;top:calc(40px + env(safe-area-inset-top));left:8px;right:8px;display:flex;gap:6px;align-items:center;z-index:9;background:#121830f2;padding:8px;border-radius:12px;font-size:13px}
+#tx input[type=text]{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid #27305a;background:#1a2142;color:var(--ink);font-size:16px}
+#tx button{border:0;background:var(--k2);color:#fff;padding:10px 12px;border-radius:10px}
+#kb{position:absolute;left:0;right:0;bottom:0;background:#0b1022f2;padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:8;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.seg{display:flex;gap:4px;margin-bottom:5px}
+.seg button{flex:1;border:0;background:#1a2142;color:var(--mut);padding:6px 0;border-radius:8px;font-size:12px}
+.seg button.on{background:var(--k2);color:#fff}
+.kr{display:flex;gap:3px;margin-bottom:3px}
+.kr.sc{overflow-x:auto;scrollbar-width:none}.kr.sc button{flex:0 0 auto;min-width:40px}
+.kr button{flex:1;min-width:0;height:38px;border:0;border-radius:8px;background:var(--k);color:var(--ink);font:500 16px system-ui;box-shadow:0 2px 0 #0007;padding:0}
+.kr button:active{background:var(--k2);transform:translateY(1px)}
+.kr .w15{flex:1.5}.kr .w2{flex:2}.kr .w5{flex:5}
+.kr .m{background:#3a2f86;font-size:13px}.kr .m.on{background:linear-gradient(135deg,var(--a),var(--b))}
+.kr .s{font-size:12px;color:#c4cbef}
+.combo{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.combo button{border:0;background:var(--k);color:var(--ink);padding:11px 2px;border-radius:9px;font-size:12px}
+@media (max-height:420px){.kr button{height:30px;font-size:14px}}
+</style></head><body>
+
+<div id="login">
+ <h1>MiniAnyDesk</h1>
+ <input id="id" inputmode="numeric" maxlength="6" placeholder="Код ПК, 6 цифр" autocomplete="off">
+ <input id="pin" inputmode="numeric" type="password" maxlength="8" placeholder="PIN сеанса" autocomplete="off">
+ <button id="go">Подключиться</button>
+ <div id="err"></div>
+</div>
+
+<div id="stage" hidden>
+ <div id="zw"><video id="v" autoplay playsinline muted></video><div id="cur" hidden></div></div>
+ <div id="pad"></div>
+ <div id="pill">Прямое P2P-соединение (WebRTC)</div>
+ <video id="pip" autoplay playsinline muted hidden></video>
+ <div id="toast"></div>
+ <div id="tx" hidden><input type="text" id="ti" placeholder="Текст для ПК" autocomplete="off" autocorrect="off" autocapitalize="off"><button id="ts">Отправить</button><label><input type="checkbox" id="live"> сразу</label><button id="tc">✕</button></div>
+ <div id="pop" class="menu" hidden><button id="c1">Отправить на ПК</button><button id="c2">Забрать с ПК</button></div>
+ <div id="more" class="menu" hidden><button id="bf">Отправить файл на ПК</button><button id="bpf">Файлы с ПК</button><button id="bs">Экран</button><button id="bpw">Питание</button><button id="bset">Настройки</button><button id="bx">Выход</button></div>
+ <div id="pwr" class="menu" hidden><button data-a="lock">Блокировка</button><button data-a="sleep">Сон</button><button data-a="restart">Перезагрузка</button><button data-a="shutdown">Выключение</button></div>
+ <div id="fl" class="panel" hidden><b>Файлы с ПК</b><div id="fll"></div><div id="fls" class="mut"></div><button id="flx">Закрыть</button></div>
+ <div id="set" class="panel" hidden><b>Настройки пульта</b>
+  <label><input type="checkbox" id="s1"> Показывать статистику (пинг, FPS, битрейт)</label>
+  <label><input type="checkbox" id="s2"> Показывать курсор ПК</label>
+  <label>Тачпад <input type="range" id="s3" min="0.8" max="3" step="0.1" style="flex:1"></label>
+  <button id="sx">Закрыть</button></div>
+ <div id="tbar">
+  <button id="bk" aria-label="Клавиатура"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
+  <button id="bt" aria-label="Клавиатура iPhone">Aa</button>
+  <button id="bc" aria-label="Буфер обмена"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg></button>
+  <button id="bsn">Звук</button>
+  <button id="bm"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>Камера</button>
+  <button id="bmore">Ещё</button>
+ </div>
+ <input type="file" id="file" hidden>
+ <div id="kb" hidden></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const tg=window.Telegram&&Telegram.WebApp;
+if(tg&&tg.initData!==undefined){try{tg.ready();tg.expand();tg.disableVerticalSwipes&&tg.disableVerticalSwipes()}catch(e){}}
+const idq=new URLSearchParams(location.search).get('id');if(idq)$('#id').value=idq;
+let C={stats:true,cursor:true,sens:1.6};
+try{Object.assign(C,JSON.parse(localStorage.getItem('mad')||'{}'))}catch(e){}
+const saveC=()=>{try{localStorage.setItem('mad',JSON.stringify(C))}catch(e){}};
+let ws,pc,ctrl,filesCh,camTx,camStream,facing='user',mons={n:1,cur:1},pcClip='',qual='',curS=null,dl=null,saved=null,statT=0,lb=0,lt=0;
+const Z={z:1,tx:0,ty:0};
+const v=$('#v'),zw=$('#zw'),curEl=$('#cur'),ms=new MediaStream();
+const send=o=>ctrl&&ctrl.readyState==='open'&&ctrl.send(JSON.stringify(o));
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
+function login(msg){clearInterval(statT);ms.getTracks().forEach(t=>ms.removeTrack(t));v.srcObject=null;Z.z=1;Z.tx=Z.ty=0;applyZ();
+ $('#stage').hidden=true;$('#login').hidden=false;$('#err').textContent=msg||'';try{pc&&pc.close();ws&&ws.close()}catch(e){}}
+
+$('#go').onclick=()=>{
+ const id=$('#id').value.trim(),pin=$('#pin').value.trim();
+ if(id.length!==6||!pin){$('#err').textContent='Введите код и PIN';return}
+ $('#err').textContent='Подключаемся…';
+ ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ ws.onopen=()=>ws.send(JSON.stringify({type:'join',id,pin}));
+ ws.onerror=()=>login('Нет связи с сервером');
+ ws.onmessage=async e=>{const m=JSON.parse(e.data);
+  if(m.type==='ok')rtc();
+  else if(m.type==='denied')login({pin:'Неверный PIN','no-host':'ПК с таким кодом не найден',locked:'Слишком много попыток. Создайте новый код на ПК',rate:'Слишком часто. Подождите минуту'}[m.reason]||'Отказано');
+  else if(m.type==='answer')await pc.setRemoteDescription({type:'answer',sdp:m.sdp});
+  else if(m.type==='bye')login('ПК отключил сеанс')};
+};
+
+async function rtc(){
+ pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ pc.addTransceiver('video',{direction:'recvonly'});            // экран ПК
+ pc.addTransceiver('audio',{direction:'recvonly'});            // звук ПК
+ camTx=pc.addTransceiver('video',{direction:'sendonly'});      // камера телефона
+ ctrl=pc.createDataChannel('ctrl');filesCh=pc.createDataChannel('files');filesCh.binaryType='arraybuffer';filesCh.onmessage=onFile;
+ pc.ontrack=e=>{ms.addTrack(e.track);if(!v.srcObject)v.srcObject=ms};
+ pc.onconnectionstatechange=()=>{if(['failed','disconnected','closed'].includes(pc.connectionState))login('Соединение потеряно')};
+ ctrl.onopen=()=>{$('#login').hidden=true;$('#stage').hidden=false;v.play().catch(()=>{});$('#err').textContent='';lb=lt=0;statT=setInterval(stats,1000)};
+ ctrl.onmessage=e=>{const m=JSON.parse(e.data);
+  if(m.t==='mons')mons={n:m.n,cur:m.cur};
+  else if(m.t==='clip'){pcClip=m.s;toast('На ПК скопирован текст. Меню буфера → «Забрать с ПК»')}
+  else if(m.t==='cur'){curS=m;placeCur()}
+  else if(m.t==='ls')renderLs(m.files);
+  else if(m.t==='qual')qual=' · цель '+m.fps+' fps'};
+ await pc.setLocalDescription(await pc.createOffer());
+ await new Promise(r=>{if(pc.iceGatheringState==='complete')return r();pc.onicegatheringstatechange=()=>pc.iceGatheringState==='complete'&&r();setTimeout(r,3000)});
+ ws.send(JSON.stringify({type:'offer',sdp:pc.localDescription.sdp}));
+}
+
+/* ---------- статистика ---------- */
+async function stats(){if(!pc||pc.connectionState!=='connected')return;
+ const r=await pc.getStats();let fps=0,w=0,h=0,b=0,rtt=null;
+ r.forEach(s=>{if(s.type==='inbound-rtp'&&s.kind==='video'){fps=s.framesPerSecond||0;w=s.frameWidth||0;h=s.frameHeight||0;b=s.bytesReceived||0}
+  if(s.type==='candidate-pair'&&s.state==='succeeded'&&s.currentRoundTripTime!=null&&s.selected!==false)rtt=s.currentRoundTripTime});
+ const now=performance.now(),mb=lt?(b-lb)*8/((now-lt)/1000)/1e6:0;lb=b;lt=now;
+ $('#pill').textContent=C.stats?`P2P · ${rtt==null?'–':Math.round(rtt*1000)} мс · ${Math.round(fps)} fps · ${mb.toFixed(1)} Мбит/с · ${w}×${h}${qual}`:'Прямое P2P-соединение (WebRTC)'}
+
+/* ---------- курсор ПК и масштаб ---------- */
+const SH={arrow:'<svg viewBox="0 0 16 22" width="16" height="22"><path d="M1 1v16l4-4 3 7 3-1-3-7h6z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>',
+ ibeam:'<svg viewBox="0 0 10 20" width="10" height="20"><path d="M2 1h6M2 19h6M5 1v18" stroke="#000" stroke-width="3.4"/><path d="M2 1h6M2 19h6M5 1v18" stroke="#fff" stroke-width="1.4"/></svg>',
+ hand:'☝',wait:'⏳',cross:'+',move:'✥',no:'⛔'};
+const OFF={ibeam:[-5,-10],hand:[-6,0],wait:[-8,-8],cross:[-6,-9],move:[-8,-9],no:[-8,-9]};
+function clampZ(){const W=zw.clientWidth,H=zw.clientHeight;Z.tx=Math.min(0,Math.max(W-W*Z.z,Z.tx));Z.ty=Math.min(0,Math.max(H-H*Z.z,Z.ty))}
+function applyZ(){zw.style.transform=`translate(${Z.tx}px,${Z.ty}px) scale(${Z.z})`}
+function zoomBy(f,cx,cy){const nz=Math.min(5,Math.max(1,Z.z*f)),k=nz/Z.z;Z.tx=cx-(cx-Z.tx)*k;Z.ty=cy-(cy-Z.ty)*k;Z.z=nz;
+ if(nz<1.03){Z.z=1;Z.tx=Z.ty=0}clampZ();applyZ();placeCur()}
+function placeCur(){const m=curS;
+ if(!m||!C.cursor||!m.v||m.x<0||m.x>1||m.y<0||m.y>1||!v.videoWidth){curEl.hidden=true;return}
+ const W=zw.clientWidth,H=zw.clientHeight,sc=Math.min(W/v.videoWidth,H/v.videoHeight),ox=(W-v.videoWidth*sc)/2,oy=(H-v.videoHeight*sc)/2;
+ const px=ox+m.x*v.videoWidth*sc,py=oy+m.y*v.videoHeight*sc;
+ if(curEl.dataset.s!==m.s){curEl.dataset.s=m.s;curEl.innerHTML=SH[m.s]||SH.arrow;const o=OFF[m.s]||[0,0];curEl.style.margin=o[1]+'px 0 0 '+o[0]+'px'}
+ curEl.hidden=false;curEl.style.transform=`translate(${px}px,${py}px) scale(${1/Z.z})`;
+ if(Z.z>1){const sx=px*Z.z+Z.tx,sy=py*Z.z+Z.ty,M=70,ox2=Z.tx,oy2=Z.ty;
+  if(sx<M)Z.tx+=M-sx;else if(sx>W-M)Z.tx-=sx-(W-M);
+  if(sy<M)Z.ty+=M-sy;else if(sy>H-M)Z.ty-=sy-(H-M);
+  clampZ();if(Z.tx!==ox2||Z.ty!==oy2)applyZ()}}
+v.addEventListener('resize',placeCur);addEventListener('resize',()=>{clampZ();applyZ();placeCur()});
+
+/* ---------- тачпад ---------- */
+let g=null,acc={x:0,y:0},raf=0;
+const avg=e=>{let x=0,y=0;for(const t of e.touches){x+=t.clientX;y+=t.clientY}return{x:x/e.touches.length,y:y/e.touches.length}};
+const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+function flush(){raf=0;const dx=Math.trunc(acc.x),dy=Math.trunc(acc.y);if(dx||dy){acc.x-=dx;acc.y-=dy;send({t:'mm',dx,dy})}}
+const pad=$('#pad'),O={passive:false};
+pad.addEventListener('touchstart',e=>{e.preventDefault();const p=avg(e);
+ if(!g)g={t0:Date.now(),max:0,moved:0,drag:false,last:p,scroll:0,timer:0,d:0};
+ g.max=Math.max(g.max,e.touches.length);g.last=p;if(e.touches.length>=2)g.d=dist(e);
+ if(e.touches.length===1&&g.max===1)g.timer=setTimeout(()=>{if(g&&g.moved<8&&g.max===1){g.drag=true;send({t:'md',b:'left'});navigator.vibrate&&navigator.vibrate(15)}},450)},O);
+pad.addEventListener('touchmove',e=>{e.preventDefault();if(!g)return;const p=avg(e),dx=p.x-g.last.x,dy=p.y-g.last.y;g.last=p;g.moved+=Math.abs(dx)+Math.abs(dy);
+ if(e.touches.length>=2){const d=dist(e),dd=d-g.d;
+  if(g.d&&Math.abs(dd)>2&&Math.abs(dd)>Math.abs(dy)*1.2){zoomBy(d/g.d,p.x,p.y);g.moved+=20}
+  else{g.scroll+=dy;while(Math.abs(g.scroll)>14){send({t:'sc',dy:g.scroll>0?1:-1});g.scroll-=Math.sign(g.scroll)*14}}
+  g.d=d}
+ else{const v_=Math.hypot(dx,dy),m=C.sens*(1+Math.min(v_/10,2))/Math.sqrt(Z.z);acc.x+=dx*m;acc.y+=dy*m;if(!raf)raf=requestAnimationFrame(flush)}},O);
+pad.addEventListener('touchend',e=>{e.preventDefault();if(!g||e.touches.length>0)return;clearTimeout(g.timer);
+ if(g.drag)send({t:'mu',b:'left'});
+ else if(g.moved<8&&Date.now()-g.t0<300)send({t:'mc',b:g.max>=2?'right':'left'});
+ g=null},O);
+pad.addEventListener('touchcancel',()=>{if(g&&g.drag)send({t:'mu',b:'left'});g=null});
+
+/* ---------- панель ---------- */
+function menu(id){const t=$('#'+id),open=t.hidden;['pop','more','pwr'].forEach(x=>$('#'+x).hidden=true);t.hidden=!open}
+$('#bc').onclick=()=>menu('pop');$('#bmore').onclick=()=>menu('more');
+$('#c1').onclick=async()=>{menu('pop');try{const s=await navigator.clipboard.readText();send({t:'clip',s});toast('Отправлено на ПК')}catch(e){toast('Нет доступа к буферу телефона')}};
+$('#c2').onclick=async()=>{menu('pop');try{await navigator.clipboard.writeText(pcClip);toast('Скопировано на телефон')}catch(e){toast('Не удалось скопировать')}};
+$('#bsn').onclick=()=>{v.muted=!v.muted;v.play().catch(()=>{});$('#bsn').classList.toggle('on',!v.muted);toast(v.muted?'Звук выключен':'Звук включён')};
+$('#bf').onclick=()=>{menu('more');$('#file').click()};
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ filesCh.send(JSON.stringify({name:f.name,size:f.size}));let off=0;
+ while(off<f.size){if(filesCh.bufferedAmount>1<<20){await new Promise(r=>setTimeout(r,50));continue}
+  filesCh.send(await f.slice(off,off+16384).arrayBuffer());off+=16384}
+ filesCh.send('done');toast('Файл отправлен');e.target.value=''};
+$('#bs').onclick=()=>{menu('more');mons.cur=mons.cur%mons.n+1;send({t:'mon',i:mons.cur});toast('Монитор '+mons.cur)};
+$('#bx').onclick=()=>{send({t:'bye'});login('')};
+$('#bpw').onclick=()=>menu('pwr');
+document.querySelectorAll('#pwr [data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;
+ if((a==='restart'||a==='shutdown')&&!confirm((a==='restart'?'Перезагрузить':'Выключить')+' ПК?'))return;
+ send({t:'pwr',a});menu('pwr');toast('Команда отправлена')});
+
+/* настройки пульта */
+$('#s1').checked=C.stats;$('#s2').checked=C.cursor;$('#s3').value=C.sens;
+$('#s1').onchange=e=>{C.stats=e.target.checked;saveC();if(!C.stats)$('#pill').textContent='Прямое P2P-соединение (WebRTC)'};
+$('#s2').onchange=e=>{C.cursor=e.target.checked;saveC();placeCur()};
+$('#s3').oninput=e=>{C.sens=+e.target.value;saveC()};
+$('#bset').onclick=()=>{menu('more');$('#set').hidden=false};$('#sx').onclick=()=>$('#set').hidden=true;
+
+/* файлы с ПК */
+const fmt=n=>n>1e6?(n/1e6).toFixed(1)+' МБ':Math.max(1,Math.round(n/1e3))+' КБ';
+$('#bpf').onclick=()=>{menu('more');$('#fl').hidden=false;$('#fls').textContent='';send({t:'ls'})};
+$('#flx').onclick=()=>$('#fl').hidden=true;
+function renderLs(files){const l=$('#fll');l.innerHTML=files.length?'':'<div class="mut">Папка пуста. Положите файлы в «Для_телефона» на ПК или добавьте их в окне агента.</div>';
+ files.forEach(f=>{const b=document.createElement('button');b.className='row';b.innerHTML='<span>'+esc(f.n)+'</span><small>'+fmt(f.s)+'</small>';
+  b.onclick=()=>{send({t:'get',n:f.n});$('#fls').textContent='Загрузка…'};l.appendChild(b)})}
+function onFile(e){const d=e.data;
+ if(typeof d==='string'){
+  if(d==='done'){if(!dl)return;saved={name:dl.name,blob:new Blob(dl.parts)};dl=null;const s=$('#fls');s.innerHTML='';
+   const b=document.createElement('button');b.textContent='Сохранить «'+saved.name+'»';b.onclick=saveFile;s.appendChild(b)}
+  else{const m=JSON.parse(d);dl={name:m.dl,size:m.size,parts:[],got:0}}}
+ else if(dl){dl.parts.push(d);dl.got+=d.byteLength;$('#fls').textContent='Загрузка '+Math.round(dl.got*100/Math.max(dl.size,1))+'%'}}
+async function saveFile(){if(!saved)return;const f=new File([saved.blob],saved.name);
+ try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(saved.blob);a.download=saved.name;a.click()}}catch(e){}}
+
+/* камера телефона */
+async function cam(on){const pip=$('#pip');
+ try{camStream&&camStream.getTracks().forEach(t=>t.stop());
+  if(on){camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:640,height:480},audio:false});
+   await camTx.sender.replaceTrack(camStream.getVideoTracks()[0]);pip.srcObject=camStream;pip.hidden=false}
+  else{await camTx.sender.replaceTrack(null);pip.hidden=true}
+  $('#bm').classList.toggle('on',on);toast(on?'Камера передаётся на ПК':'Камера выключена')}
+ catch(e){toast('Нет доступа к камере')}}
+$('#bm').onclick=()=>cam(!$('#bm').classList.contains('on'));
+$('#pip').onclick=()=>{facing=facing==='user'?'environment':'user';cam(true)};
+
+/* обычная клавиатура iPhone: отправка текста на ПК */
+const ti=$('#ti');
+$('#bt').onclick=()=>{$('#tx').hidden=!$('#tx').hidden;if(!$('#tx').hidden)ti.focus();else ti.blur()};
+$('#tc').onclick=()=>{$('#tx').hidden=true;ti.blur()};
+function sendText(){const s=ti.value;if(s){send({t:'text',s});ti.value=''}ti.focus()}
+$('#ts').onclick=sendText;
+ti.addEventListener('keydown',e=>{
+ if($('#live').checked){if(e.key==='Backspace'){e.preventDefault();send({t:'k',mods:[],n:'Backspace'})}else if(e.key==='Enter'){e.preventDefault();send({t:'k',mods:[],n:'Enter'})}}
+ else if(e.key==='Enter'){e.preventDefault();sendText()}});
+ti.addEventListener('input',e=>{if(!$('#live').checked||e.isComposing)return;if(ti.value){send({t:'text',s:ti.value});ti.value=''}});
+ti.addEventListener('compositionend',()=>{if($('#live').checked&&ti.value){send({t:'text',s:ti.value});ti.value=''}});
+
+/* ---------- полная клавиатура ---------- */
+const R=[
+ {c:'Backquote Digit1 Digit2 Digit3 Digit4 Digit5 Digit6 Digit7 Digit8 Digit9 Digit0 Minus Equal',en:'`1234567890-=',ens:'~!@#$%^&*()_+',ru:'ё1234567890-=',rus:'Ё!"№;%:?*()_+'},
+ {c:'KeyQ KeyW KeyE KeyR KeyT KeyY KeyU KeyI KeyO KeyP BracketLeft BracketRight Backslash',en:'qwertyuiop[]\\',ens:'QWERTYUIOP{}|',ru:'йцукенгшщзхъ\\',rus:'ЙЦУКЕНГШЩЗХЪ/'},
+ {c:'KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote',en:"asdfghjkl;'",ens:'ASDFGHJKL:"',ru:'фывапролджэ',rus:'ФЫВАПРОЛДЖЭ'},
+ {c:'KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash',en:'zxcvbnm,./',ens:'ZXCVBNM<>?',ru:'ячсмитьбю.',rus:'ЯЧСМИТЬБЮ,'}
+];
+const MODS=['Control','Alt','Meta','Shift'],MN={Control:'Ctrl',Alt:'Alt',Meta:'Win',Shift:'⇧'};
+const S={Control:0,Alt:0,Meta:0,Shift:0,caps:0,lang:'ru',mode:'keys',shT:0};
+const kbEl=$('#kb');
+const clr=()=>MODS.forEach(m=>S[m]=0);
+function key(o){send({t:'k',mods:MODS.filter(m=>S[m]),...o});clr();draw()}
+function B(t,cls,fn){const b=document.createElement('button');b.textContent=t;if(cls)b.className=cls;b.onclick=fn;return b}
+function R_(cls){const d=document.createElement('div');d.className='kr'+(cls?' '+cls:'');return d}
+function mod(k,w){return B(MN[k],'m'+(S[k]?' on':'')+(w?' '+w:''),()=>{
+ if(k==='Shift'){const now=Date.now();if(S.Shift&&now-S.shT<400){S.caps=S.caps?0:1;S.Shift=0}else S.Shift=S.Shift?0:1;S.shT=now}else S[k]=S[k]?0:1;draw()})}
+function lab(r,i){const base=R[r][S.lang][i],letter=base.toLowerCase()!==base.toUpperCase();
+ const up=letter?(!!S.Shift!==!!S.caps):!!S.Shift;return up?R[r][S.lang+'s'][i]:base}
+function draw(){kbEl.innerHTML='';
+ const seg=document.createElement('div');seg.className='seg';
+ [['keys','Клавиши'],['nav','F1–F12 и навигация'],['combo','Сочетания'],['hide','Скрыть']].forEach(([m,t])=>{const b=B(t,S.mode===m?'on':'',()=>{if(m==='hide'){kbEl.hidden=true;$('#tbar').hidden=false;return}S.mode=m;draw()});seg.appendChild(b)});
+ kbEl.appendChild(seg);
+ if(S.mode==='keys'){
+  const f=R_('sc');['Escape','F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','Delete'].forEach(k=>f.appendChild(B(k==='Escape'?'Esc':k==='Delete'?'Del':k,'s',()=>key({n:k}))));kbEl.appendChild(f);
+  R.forEach((r,ri)=>{const row=R_();const codes=r.c.split(' ');
+   if(ri===1)row.appendChild(B('Tab','w15 s',()=>key({n:'Tab'})));
+   if(ri===2)row.appendChild(B('Caps','w15 s'+(S.caps?' m on':''),()=>{S.caps=S.caps?0:1;draw()}));
+   if(ri===3)row.appendChild(mod('Shift','w2'));
+   codes.forEach((c,i)=>{const ch=lab(ri,i);row.appendChild(B(ch,'',()=>key({c,ch})))});
+   if(ri===0)row.appendChild(B('⌫','w15 s',()=>key({n:'Backspace'})));
+   if(ri===2)row.appendChild(B('Enter','w2 m',()=>key({n:'Enter'})));
+   if(ri===3)row.appendChild(mod('Shift','w15'));
+   kbEl.appendChild(row)});
+  const l=R_();l.appendChild(mod('Control','w15'));l.appendChild(mod('Meta','w15'));l.appendChild(mod('Alt','w15'));
+  l.appendChild(B('Пробел','w5',()=>key({n:'Space'})));
+  l.appendChild(B(S.lang==='ru'?'РУ':'EN','m',()=>{S.lang=S.lang==='ru'?'en':'ru';draw()}));
+  [['←','ArrowLeft'],['↑','ArrowUp'],['↓','ArrowDown'],['→','ArrowRight']].forEach(([t,n])=>l.appendChild(B(t,'s',()=>key({n}))));
+  kbEl.appendChild(l);
+ }else{
+  const g=document.createElement('div');g.className='combo';
+  const items=S.mode==='nav'?
+   ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','Insert','Home','PageUp','Delete','End','PageDown','PrintScreen','Pause','ScrollLock','NumLock','ContextMenu'].map(n=>[n,{n}]):
+   [['Копировать',{mods:['Control'],c:'KeyC'}],['Вставить',{mods:['Control'],c:'KeyV'}],['Вырезать',{mods:['Control'],c:'KeyX'}],['Отменить',{mods:['Control'],c:'KeyZ'}],
+    ['Выделить всё',{mods:['Control'],c:'KeyA'}],['Сохранить',{mods:['Control'],c:'KeyS'}],['Найти',{mods:['Control'],c:'KeyF'}],['Пуск',{n:'Meta'}],
+    ['Alt+Tab',{mods:['Alt'],n:'Tab'}],['Alt+F4',{mods:['Alt'],n:'F4'}],['Диспетчер задач',{mods:['Control','Shift'],n:'Escape'}],['Win+D',{mods:['Meta'],c:'KeyD'}],
+    ['Win+L',{mods:['Meta'],c:'KeyL'}],['Win+R',{mods:['Meta'],c:'KeyR'}],['Win+Tab',{mods:['Meta'],n:'Tab'}],['Скриншот',{mods:['Meta','Shift'],c:'KeyS'}]];
+  items.forEach(([t,o])=>g.appendChild(B(t,'',()=>{send({t:'k',mods:[],...o});clr()})));
+  kbEl.appendChild(g);
+ }}
+$('#bk').onclick=()=>{kbEl.hidden=false;$('#tbar').hidden=true;['pop','more','pwr'].forEach(x=>$('#'+x).hidden=true);draw()};
+</script></body></html>
